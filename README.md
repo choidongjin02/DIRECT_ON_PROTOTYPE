@@ -20,7 +20,7 @@ agent_server/       상담원 서버 (제출물)
   requirements.txt    패키지 목록
   .env.example        키 견본 (복사해서 .env 로)
   check_apis.py       API 3개가 되는지 점검 (개발용)
-mock_tools/         가짜 주문 전산실 (8100번)
+mock_tools/         가짜 주문 전산실 (8100번) — 상담원이 조회·접수 함수를 부르면 답해 주는 서버 (제출물)
 eval/               시험 도구: run_eval(측정기) · record(마이크 녹음) · make_meta · score_demo(속도 점수표)
 data/               연습 데이터: 도구 정의, 가짜 장부, 영어 데모 음성
 docs/               주최 측 통신 규격 문서 (참고)
@@ -89,4 +89,5 @@ python eval/score_demo.py --run runs/ko1
 ## 알아 둘 것
 - **11/21에 할 일**: 매뉴얼을 `prompt.md`에 붙여 넣기 · 자주 쓰는 고정 문구(`server.py`의 `PHRASES`)를 매뉴얼 문구로 바꾸기 · 도구 정의(`data/demo_tools.json`)와 가짜 장부(`data/demo_mock_data.json`) 교체 · `history` 형식 확인(`server.py`의 `history_messages`).
 - **알려진 한계**: Gemini 한도(분당 10회) · 스타터의 `data/audio/demo/meta.json` 값이 녹음과 안 맞음(그래서 직접 녹음한 파일을 쓴다) · 받아쓰기 오인식("교환"→"소환") 보정은 아직 없음.
+- **전산실(`mock_tools/`)도 제출물입니다.** 대회 측정 때 상담원 서버와 함께 켜 두어야 하고, 측정 직전에 받는 시험용 장부 파일로 다시 띄웁니다. 겉보기엔 단순하지만 11/21에 가장 많이 바뀌는 부분입니다.
 - **제출할 때 뺄 것**: `.env`(키!), `runs/`, `eval/`, `check_apis.py`, `example_server/`.

@@ -1,0 +1,7 @@
+websockets>=14
+httpx
+numpy
+scipy
+openai
+google-genai
+python-dotenv

@@ -7,8 +7,6 @@
 runs/
 
 # ── 내 목소리 녹음과 거기서 만든 파일 (각자 eval/record.py 로 만들기) ──
-data/audio/ko/
-data/ko_cases*.jsonl
 
 # ── 파이썬 캐시, 가상환경, 편집기 설정 ──
 __pycache__/

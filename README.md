@@ -1,7 +1,7 @@
 # DIRECT:ON 2026 — 실시간 음성 AI 상담원 (1차 프로토타입)
 
 전화로 들어온 고객 목소리를 **알아듣고 → 생각하고 → 목소리로 답하는** AI 상담원 서버입니다.
-대회 지정 모델: 받아쓰기 **Soniox** · 생각 **gpt-5.4-mini** · 말하기 **Gemini 2.5 Flash TTS**
+현재 실험 모델: 받아쓰기 **Soniox** · 생각 **gpt-5.4-mini** · 말하기 **Gemini 3.8 Flash TTS**
 
 ```
 고객 음성 → 상담원 서버(9000번) → Soniox(받아쓰기) → gpt-5.4-mini ⇄ 전산실(8100번) → Gemini(말하기) → 음성 응답
@@ -100,7 +100,7 @@ python eval/score_demo.py --run runs/ko1
 | `SHORT_FIRST` | 0 | (실험) 1 이면 LLM 에 '두 문장 이상이면 첫 문장은 15자 안팎으로 짧게' 규칙을 더함 |
 | `SERVER_LOG` | (비움) | (실험) 파일 경로를 주면 통화마다 단계별 시간·업무 판정·TTS 시간을 JSON 한 줄씩 기록 |
 | `TTS_CACHE_DIR` | `runs/tts_cache` | 고정 문구 음성을 저장해 두는 곳. 서버를 다시 켤 때 TTS 를 다시 요청하지 않아 준비가 빠름 |
-| `TTS_VOICE` / `TTS_STYLE` | Kore / `Say: ` | 목소리 종류 / 읽어 달라는 지시 (지시가 없으면 Gemini가 실패함) |
+| `TTS_VOICE` / `TTS_STYLE` | Kore / `차분하고 자연스러운 한국어 상담원 말투` | 목소리 종류 / 발화 스타일 (`speech_metadata.style`) |
 | `VERBOSE` | 1 | 0이면 고객 발화를 출력하지 않음 (**정식 측정 때는 0**) |
 
 ## 실험: 업무 분류 + 업무별 프롬프트 + 문장별 병렬 TTS

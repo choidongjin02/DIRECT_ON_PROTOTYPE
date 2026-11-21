@@ -119,7 +119,7 @@ async def diagnose_tts(out):
         results = []
         for label, style in STYLES:
             try:
-                audio, problem = await server.gemini_tts(style + text)
+                audio, problem = await server.gemini_tts(text, style=style)
                 results.append(f"{label}={'성공' if audio else '음성없음'}")
                 if audio and text == PROBES["숫자 없는 상담원 문장"]:
                     save_wav(out / f"diag_{label}.wav", server.to_16k(audio))     # 지시 문구를 소리로 읽는지 직접 들어 보라고 저장
@@ -137,7 +137,7 @@ async def diagnose_tts(out):
 async def phone_probe():
     """참고 시험(실패해도 문제로 치지 않음): 상담원이 전화번호를 읽어 주는 문장도 되는지."""
     try:
-        audio, problem = await server.gemini_tts(server.TTS_STYLE + PHONE)
+        audio, problem = await server.gemini_tts(PHONE)
         print("   전화번호 문장도 읽습니다." if audio else f"   전화번호 문장은 음성이 비어 옵니다 ({problem}) → 번호를 읽어 주는 답은 피하는 게 좋아요.")
     except Exception as e:
         print(f"   참고 시험 중 오류: {str(e)[:100]}")
@@ -147,10 +147,7 @@ async def stream_probe():
     """참고 시험(실패해도 문제로 치지 않음): 음성을 조각으로 나눠 받으면 첫 소리가 얼마나 빨리 오는지. 4번의 걸린 시간과 비교해 보세요."""
     t0, first, chunks, size = time.perf_counter(), None, 0, 0
     try:
-        stream = await server.gemini.aio.models.generate_content_stream(
-            model=server.TTS_MODEL, contents=server.TTS_STYLE + SENTENCE, config=server.tts_config())
-        async for chunk in stream:
-            audio = server.tts_audio(chunk)
+        async for audio in server.tts_raw_stream(SENTENCE):
             if audio:
                 chunks, size = chunks + 1, size + len(audio)
                 first = first or time.perf_counter() - t0

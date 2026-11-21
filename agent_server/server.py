@@ -8,19 +8,18 @@
   (실험 브랜치) 듣는 동안 업무 유형을 미리 분류(case_router.py) → 그 업무 지침을 프롬프트 2단계로 붙임
                말하기는 TTS_MODE 로 고름: 문장마다 따로 TTS 를 동시에 불러 순서대로 이어 붙이는 방식 포함
 
-대회 지정 모델:  STT = Soniox stt-rt-v6 / LLM = gpt-5.4-mini / TTS = Gemini 2.5 Flash TTS
+현재 실험 모델:  STT = Soniox stt-rt-v6 / LLM = gpt-5.4-mini / TTS = Gemini 3.8 Flash TTS
 실행:  python agent_server/server.py --port 9000
 준비:  pip install -r agent_server/requirements.txt
        agent_server/.env 에 OPENAI_API_KEY, SONIOX_API_KEY, GEMINI_API_KEY 를 적는다 (.env.example 을 복사해서 사용)
 """
-import argparse, asyncio, hashlib, itertools, json, math, os, re, time, wave
+import argparse, asyncio, base64, hashlib, itertools, json, math, os, re, time, wave
 from contextlib import suppress
 from pathlib import Path
 
 import httpx, numpy as np, websockets
 from dotenv import load_dotenv
 from google import genai
-from google.genai import errors as genai_errors
 from google.genai import types
 from openai import AsyncOpenAI
 from scipy.signal import resample_poly
@@ -41,11 +40,9 @@ SONIOX_URL = os.getenv("SONIOX_URL", "wss://stt-rt.soniox.com/transcribe-websock
 SONIOX_CONFIG = {"model": "stt-rt-v6", "audio_format": "pcm_s16le", "sample_rate": 16000, "num_channels": 1,
                  "language_hints": ["ko"]}               # 말 끝은 우리 눈치가 정하고 finalize 를 보낸다 (Soniox 자체 endpoint 감지는 끔)
 STT_TIMEOUT_S = 5                                         # finalize 뒤 확정 글자를 기다리는 최대 시간
-TTS_MODEL = "gemini-2.5-flash-preview-tts"
+TTS_MODEL = "gemini-3.8-flash-tts"
 TTS_VOICE = os.getenv("TTS_VOICE", "Kore")
-TTS_STYLE = os.getenv("TTS_STYLE", "Say: ")               # 읽을 글 앞에 붙이는 지시. 없으면 Gemini 가 글을 '질문'으로 착각해 실패한다 (예: "차분하게 말해 주세요: ")
-TTS_KO_STYLE = "다음 문장을 그대로 읽어 주세요: "                # 위 지시가 실패했을 때 쓰는 한국어 지시 (직접 시험했을 때 성공한 문구)
-TTS_RETRY_STYLE = "Read the following text aloud exactly as written: "   # 첫 시도가 실패했을 때 쓰는 더 분명한 지시
+TTS_STYLE = os.getenv("TTS_STYLE", "차분하고 자연스러운 한국어 상담원 말투")  # 발화 지시는 3.8의 speech_metadata.style로 전달
 TTS_STREAM = os.getenv("TTS_STREAM", "1") == "1"            # 1 이면 음성을 조각으로 받는 대로 바로 내보낸다 (첫 소리가 빨라짐). 안 되면 자동으로 통째 방식으로 돌아간다
 TTS_PER_SENTENCE = os.getenv("TTS_PER_SENTENCE", "0") == "1"   # 0 이면 답 전체를 한 번에 읽힌다 (요청 수가 줄어 무료 등급 한도에 유리)
 # 말하기 방식. 비우면 위 두 설정으로 예전과 똑같이 동작한다 (stream / single / sentence_seq)
@@ -594,37 +591,39 @@ class Draft:
 
 
 # ── 4. 말하기: Gemini TTS ───────────────────────────────────────────
-def tts_audio(r):
-    """Gemini 응답에서 음성 데이터를 찾는다. 없으면 None."""
-    for cand in r.candidates or []:
-        for part in (cand.content.parts if cand.content else None) or []:
-            if part.inline_data and part.inline_data.data:
-                return part.inline_data.data
-    return None
+def tts_request(text, style=None):
+    """음성으로 읽을 내용과 발화 지시를 분리하고 raw 24kHz PCM을 요청한다."""
+    part = {"type": "text", "text": text}
+    style = TTS_STYLE if style is None else style
+    if style:
+        part["annotations"] = [{"type": "speech_metadata", "style": style}]
+    return {
+        "model": TTS_MODEL,
+        "input": [{"type": "user_input", "content": [part]}],
+        "response_format": {"type": "audio", "mime_type": "audio/l16", "sample_rate": TTS_RATE},
+        "generation_config": {"speech_config": [{"voice": TTS_VOICE}]},
+    }
 
 
-def tts_problem(r):
-    """음성이 없을 때 이유(종료 사유, 차단 사유, 글자로만 답했는지)를 한 줄로 정리한다."""
-    cand = r.candidates[0] if r.candidates else None
-    parts = (cand.content.parts if cand and cand.content else None) or []
-    said = " ".join(p.text for p in parts if p.text)[:60]
-    block = r.prompt_feedback.block_reason if r.prompt_feedback else None
-    return f"종료사유={cand.finish_reason if cand else None}, 차단사유={block}, 글자 응답={said!r}, 모델={r.model_version}"
-
-
-def tts_config():
-    return types.GenerateContentConfig(
-        response_modalities=["AUDIO"],
-        speech_config=types.SpeechConfig(voice_config=types.VoiceConfig(
-            prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=TTS_VOICE))))
-
-
-async def gemini_tts(text, client=None):
-    """Gemini TTS 를 한 번 부른다. (24kHz PCM 음성, 실패 이유)를 돌려준다. 음성이 없으면 음성 자리는 None."""
+async def gemini_tts(text, client=None, style=None):
+    """Gemini TTS 를 한 번 부르고 24kHz raw PCM 및 실패 이유를 돌려준다."""
     USAGE["tts_req"] += 1
-    r = await (client or gemini).aio.models.generate_content(model=TTS_MODEL, contents=text, config=tts_config())
-    audio = tts_audio(r)
-    return audio, ("" if audio else tts_problem(r))
+    r = await (client or gemini).aio.interactions.create(**tts_request(text, style), store=False)
+    output = r.output_audio
+    if not output or not output.data:
+        return None, f"음성 없음 (상태={r.status})"
+    return base64.b64decode(output.data, validate=True), ""
+
+
+async def tts_raw_stream(text, client=None, style=None):
+    """생성되는 24kHz PCM 조각을 수신한다."""
+    USAGE["tts_req"] += 1
+    stream = await (client or gemini).aio.interactions.create(**tts_request(text, style), stream=True, store=False)
+    async for event in stream:
+        delta = getattr(event, "delta", None)
+        if (getattr(event, "event_type", None) == "step.delta" and
+                getattr(delta, "type", None) == "audio" and getattr(delta, "data", None)):
+            yield base64.b64decode(delta.data, validate=True)
 
 
 def to_16k(raw):
@@ -637,17 +636,8 @@ def to_16k(raw):
 
 async def synth(sentence, client=None):
     """문장 하나를 Gemini TTS 로 읽혀 16kHz PCM 으로 만든다."""
-    problem = ""
-    for style in (TTS_STYLE, TTS_KO_STYLE, TTS_RETRY_STYLE):  # 실패하면 읽어 달라는 지시를 바꿔 가며 최대 3번 시도한다
-        try:
-            raw, problem = await gemini_tts(style + sentence, client)
-        except genai_errors.ClientError as e:
-            if "generate text" not in str(e):                 # 글로 답하려다 실패한 경우만 다시 시도하고, 키·한도 같은 문제는 그대로 알린다
-                raise
-            raw, problem = None, str(e)[:150]
-        if raw:
-            break
-    else:
+    raw, problem = await gemini_tts(sentence, client)
+    if not raw:
         raise RuntimeError(f"Gemini TTS 가 음성을 돌려주지 않았습니다 ({problem})")
     pcm = to_16k(raw)
     USAGE["tts_sec"] += len(pcm) / (RATE * 2)
@@ -694,15 +684,9 @@ def phrase_key(text):
 
 
 async def stream_tts(text, stats=None, client=None):
-    """Gemini 가 음성을 조각으로 보내는 대로 16kHz PCM 조각을 내보낸다 (24kHz→16kHz 는 샘플 3개 단위로 끊어서 변환).
-    측정해 보니 Gemini 2.5 Flash TTS 는 스트리밍으로 요청해도 음성을 다 만든 뒤 한 번에 보낸다 (첫 조각 = 마지막 조각)."""
-    USAGE["tts_req"] += 1
-    stream = await (client or gemini).aio.models.generate_content_stream(model=TTS_MODEL, contents=TTS_STYLE + text, config=tts_config())
+    """Gemini 음성 조각을 받는 대로 16kHz PCM 으로 변환한다."""
     carry, lead = b"", True
-    async for chunk in stream:
-        raw = tts_audio(chunk)
-        if not raw:
-            continue
+    async for raw in tts_raw_stream(text, client):
         carry += raw
         cut = len(carry) // 6 * 6
         if not cut:

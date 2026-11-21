@@ -3,5 +3,5 @@ httpx
 numpy
 scipy
 openai
-google-genai
+google-genai>=2.25.0
 python-dotenv

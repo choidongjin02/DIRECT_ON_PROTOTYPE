@@ -47,6 +47,8 @@ def fake_voice(text):
 
 
 def tts_text(body):
+    if "input" in body:
+        return "".join(p.get("text", "") for c in body["input"] for p in c.get("content", []))
     text = "".join(p.get("text", "") for c in body.get("contents", []) for p in c.get("parts", []))
     return text.split(": ", 1)[1] if ": " in text else text   # "Say: " 같은 지시를 뗀다
 
@@ -91,13 +93,15 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if "/models" in self.path:
-            return self.send_json({"models": [{"name": "models/gemini-2.5-flash-preview-tts"}]})
+            return self.send_json({"models": [{"name": "models/gemini-3.8-flash-tts"}]})
         if self.path.startswith("/stats"):
             return self.send_json(COUNTS)
         self.send_json({"error": "not found"}, 404)
 
     def do_POST(self):
         body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
+        if self.path.split("?", 1)[0].endswith("/interactions"):
+            return self.tts(body, stream=body.get("stream", False), interactions=True)
         if "generateContent" in self.path or "streamGenerateContent" in self.path:
             return self.tts(body, stream="streamGenerateContent" in self.path)
         if self.path.endswith("/chat/completions"):
@@ -127,7 +131,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_json({"model": "fake-jev", "answers": answers, "usage": {"input_tokens": 300, "output_tokens": 1}})
         self.send_json({"error": "not found"}, 404)
 
-    def tts(self, body, stream):
+    def tts(self, body, stream, interactions=False):
         with LOCK:
             now = time.time()
             while TTS_TIMES and now - TTS_TIMES[0] > 60:
@@ -143,6 +147,9 @@ class Handler(BaseHTTPRequestHandler):
         audio_sec = len(pcm) / 48000
         if not stream:
             time.sleep(first + audio_sec / TTS_SPEED)
+            if interactions:
+                data = base64.b64encode(pcm).decode()
+                return self.send_json({"id": "fake", "status": "completed", "steps": [{"type": "model_output", "content": [{"type": "audio", "data": data, "mime_type": "audio/l16"}]}]})
             return self.send_json(audio_part(pcm))
         self.send_response(200)
         self.send_header("Content-Type", "text/event-stream")
@@ -152,7 +159,8 @@ class Handler(BaseHTTPRequestHandler):
         for i in range(0, len(pcm), step):
             if i:
                 time.sleep(0.5 / TTS_SPEED)
-            self.wfile.write(f"data: {json.dumps(audio_part(pcm[i:i + step]))}\r\n\r\n".encode())
+            event = {"event_type": "step.delta", "delta": {"type": "audio", "data": base64.b64encode(pcm[i:i + step]).decode(), "mime_type": "audio/l16"}} if interactions else audio_part(pcm[i:i + step])
+            self.wfile.write(f"data: {json.dumps(event)}\r\n\r\n".encode())
             self.wfile.flush()
 
 

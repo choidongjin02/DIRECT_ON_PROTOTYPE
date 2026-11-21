@@ -57,7 +57,7 @@ class Proc:
         for line in self.p.stdout:
             self.log.write(line); self.log.flush()
             print(f"{self.tag}{line}", end="", flush=True)
-            if self.ready_text and self.ready_text in line:
+            if self.ready_text and line.startswith(self.ready_text):
                 self.ready.set()
 
     def stop(self):

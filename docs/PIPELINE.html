@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DIRECT:ON · 음성 상담 파이프라인</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17263a;
+      --muted: #495b70;
+      --line: #d5dee8;
+      --paper: #f3f6fa;
+      --white: #fff;
+      --listen: #00615d;
+      --listen-bg: #e8f5f1;
+      --reply: #304a9b;
+      --reply-bg: #edf1fc;
+      --night: #132840;
+      --mono: Consolas, "Cascadia Mono", "SFMono-Regular", monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font: 16px/1.55 "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      word-break: keep-all;
+    }
+    main { width: min(100%, 1440px); margin: 0 auto; padding: 36px 48px 25px; }
+    h1, h2, h3, p { margin: 0; }
+    code { font: .92em/1.4 var(--mono); overflow-wrap: anywhere; }
+    .eyebrow { font: 700 13px/1.4 var(--mono); letter-spacing: .09em; color: var(--reply); }
+    header { display: flex; justify-content: space-between; align-items: end; gap: 20px; margin-bottom: 23px; }
+    h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.18; letter-spacing: -.065em; margin: 5px 0 8px; }
+    header p:not(.eyebrow) { color: var(--muted); }
+    .revision { color: var(--muted); font-size: 13px; white-space: nowrap; }
+    .revision code { color: var(--ink); }
+
+    .transport {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 22px;
+      padding: 18px 23px;
+      background: var(--night);
+      border-radius: 14px;
+      color: var(--white);
+    }
+    .endpoint h2 { font-size: 17px; letter-spacing: -.035em; }
+    .endpoint code { color: #b8cce3; font-size: 13px; }
+    .transport-detail {
+      display: grid;
+      gap: 5px;
+      padding: 0 20px;
+      border-inline: 1px solid #40546a;
+    }
+    .transport-detail p {
+      display: grid;
+      grid-template-columns: 113px 1fr;
+      gap: 10px;
+      align-items: baseline;
+      color: #edf4fc;
+      font-size: 14px;
+    }
+    .transport-detail strong { color: #98e7da; font-size: 13px; white-space: nowrap; }
+
+    .main-flow { margin-top: 22px; }
+    .phase-labels, .steps { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 23px; }
+    .phase {
+      margin: 0 0 9px;
+      padding-bottom: 4px;
+      border-bottom: 2px solid currentColor;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .phase-listen { grid-column: span 2; color: var(--listen); }
+    .phase-reply { grid-column: span 3; color: var(--reply); }
+    .steps { list-style: none; margin: 0; padding: 0; }
+    .step {
+      position: relative;
+      min-width: 0;
+      min-height: 130px;
+      padding: 14px;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 11px;
+    }
+    .step:nth-child(-n+2) { --stage-ink: var(--listen); --stage-bg: var(--listen-bg); }
+    .step:nth-child(n+3) { --stage-ink: var(--reply); --stage-bg: var(--reply-bg); }
+    .step h3 { font-size: 17px; line-height: 1.35; letter-spacing: -.04em; }
+    .stage-label {
+      display: inline-block;
+      margin: 6px 0 5px;
+      padding: 3px 6px;
+      border-radius: 4px;
+      background: var(--stage-bg);
+      color: var(--stage-ink);
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .step p { font-size: 14px; color: var(--muted); }
+    .step:not(:last-child)::after {
+      position: absolute;
+      top: 50%;
+      right: -22px;
+      width: 20px;
+      transform: translateY(-50%);
+      content: "→";
+      text-align: center;
+      font: 700 21px/1 var(--mono);
+      color: #5e748b;
+    }
+
+    .details { display: grid; grid-template-columns: 2fr 3fr; gap: 23px; margin-top: 19px; }
+    .detail {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      padding: 14px 16px 15px;
+      background: var(--white);
+    }
+    .listening { border-top: 3px solid var(--listen); }
+    .tool-loop { border-top: 3px solid var(--reply); }
+    .detail h2 { font-size: 18px; letter-spacing: -.045em; }
+    .detail .subhead { color: var(--muted); font-size: 13px; margin-top: 1px; }
+    .rules { display: grid; gap: 7px; margin: 8px 0 0; }
+    .rules div { display: grid; grid-template-columns: 72px 1fr; gap: 8px; align-items: baseline; }
+    .rules dt { color: var(--listen); font-size: 14px; font-weight: 700; }
+    .rules dd, .detail-note { margin: 0; color: var(--muted); font-size: 13px; }
+    .tool-route {
+      display: grid;
+      grid-template-columns: 1fr auto 1.5fr auto 1.1fr;
+      align-items: stretch;
+      gap: 7px;
+      margin: 9px 0 7px;
+      padding: 0;
+      list-style: none;
+    }
+    .tool-route li:not(.arrow) {
+      display: grid;
+      align-content: center;
+      gap: 1px;
+      background: var(--reply-bg);
+      padding: 6px 8px;
+      border-radius: 6px;
+      color: var(--reply);
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .tool-route code { font-weight: 400; }
+    .arrow { align-self: center; color: var(--reply); }
+
+    .dev {
+      display: grid;
+      grid-template-columns: 2fr 3fr;
+      gap: 23px;
+      margin-top: 16px;
+      padding: 12px 0 11px;
+      border-block: 1px solid var(--line);
+    }
+    .dev h2 { font-size: 14px; margin-bottom: 3px; }
+    .dev p { color: var(--muted); font-size: 13px; }
+    footer { display: flex; flex-wrap: wrap; gap: 3px 12px; align-items: baseline; padding-top: 10px; }
+    footer a { color: var(--reply); font: 12px/1.4 var(--mono); }
+    footer span { font-size: 12px; color: var(--muted); }
+    a:focus-visible { outline: 2px solid var(--reply); outline-offset: 3px; }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    @media (max-width: 1050px) {
+      main { padding-inline: 27px; }
+      .transport { gap: 13px; padding-inline: 15px; }
+      .transport-detail { padding-inline: 13px; }
+      .phase-labels, .steps { gap: 18px; }
+      .step { padding: 11px; }
+      .step:not(:last-child)::after { right: -18px; width: 17px; }
+    }
+    @media (max-width: 780px) {
+      main { padding: 22px 18px; }
+      header { align-items: start; flex-direction: column; gap: 6px; }
+      .transport { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .transport-detail { grid-column: 1 / -1; grid-row: 2; border: 0; padding: 8px 0 0; border-top: 1px solid #40546a; }
+      .endpoint:last-child { text-align: right; }
+      .phase-labels { display: none; }
+      .steps { grid-template-columns: 1fr; gap: 23px; }
+      .step { min-height: 0; }
+      .step:not(:last-child)::after { content: "↓"; top: auto; bottom: -23px; right: calc(50% - 9px); transform: none; }
+      .details, .dev { grid-template-columns: 1fr; gap: 12px; }
+    }
+    @media (max-width: 400px) {
+      .transport-detail p, .tool-route { grid-template-columns: 1fr; gap: 3px; }
+      .transport-detail p + p { margin-top: 4px; }
+      .tool-route .arrow { justify-self: center; transform: rotate(90deg); }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <p class="eyebrow">DIRECT:ON / PROTOTYPE</p>
+        <h1>음성 상담 파이프라인</h1>
+        <p>고객 음성이 들어와 상담원의 답변으로 돌아가기까지</p>
+      </div>
+      <p class="revision">코드 기본값 기준 · <code>13dd7ae</code></p>
+    </header>
+
+    <section class="transport" aria-label="WebSocket 입출력">
+      <div class="endpoint">
+        <h2>평가 클라이언트</h2>
+        <code>eval/run_eval.py</code>
+      </div>
+      <div class="transport-detail">
+        <p><strong>클라이언트 → 서버</strong><span><code>session.start</code> → 고객 PCM, 16 kHz · 모노 · 16비트 · 20 ms 프레임</span></p>
+        <p><strong>서버 → 클라이언트</strong><span><code>agent.transcript</code> → 응답 PCM (같은 포맷) → <code>turn.end</code></span></p>
+      </div>
+      <div class="endpoint">
+        <h2>상담원 서버</h2>
+        <code>WebSocket :9000</code>
+      </div>
+    </section>
+
+    <section class="main-flow" aria-labelledby="main-heading">
+      <h2 id="main-heading" class="sr-only">상담원 서버의 처리 순서</h2>
+      <div class="phase-labels" aria-hidden="true">
+        <p class="phase phase-listen">고객 발화 수신</p>
+        <p class="phase phase-reply">최종 전사 확정 후 응답</p>
+      </div>
+      <ol class="steps">
+        <li class="step">
+          <h3>실시간 받아쓰기</h3>
+          <span class="stage-label">Soniox <code>stt-rt-v6</code></span>
+          <p>고객 PCM을 보내면서 중간 전사를 받습니다.</p>
+        </li>
+        <li class="step">
+          <h3>발화 종료·전사 확정</h3>
+          <span class="stage-label">RMS 무음 · Jev</span>
+          <p>발화가 끝나면 Soniox에 <code>finalize</code>를 보내 최종 전사를 받습니다.</p>
+        </li>
+        <li class="step">
+          <h3>답변 생성</h3>
+          <span class="stage-label">OpenAI <code>gpt-5.4-mini</code></span>
+          <p>최종 전사·통화 이력·업무 지침으로 답을 만듭니다. 필요하면 도구를 호출합니다.</p>
+        </li>
+        <li class="step">
+          <h3>음성 합성</h3>
+          <span class="stage-label">Gemini 2.5 Flash TTS</span>
+          <p>캐시 음성을 우선 사용합니다. 새 음성은 기본 <code>stream</code> 모드로 합성해 24 → 16 kHz로 변환합니다.</p>
+        </li>
+        <li class="step">
+          <h3>응답 전송</h3>
+          <span class="stage-label">동일 WebSocket 세션</span>
+          <p>응답 문장과 20 ms PCM 프레임을 보내고 <code>turn.end</code>로 마칩니다.</p>
+        </li>
+      </ol>
+    </section>
+
+    <div class="details">
+      <section class="detail listening" aria-labelledby="jev-heading">
+        <h2 id="jev-heading">듣는 동안 하는 두 가지 판단</h2>
+        <p class="subhead">TypeSafe 키가 있으면 기본적으로 두 판단에 모두 Jev를 사용합니다.</p>
+        <dl class="rules">
+          <div>
+            <dt>발화 종료</dt>
+            <dd><code>end</code>는 무음 650 ms에 종료, <code>hold</code>는 최대 2,500 ms 대기. 유효한 판정이 없으면 무음 800 ms, 이어지는 어미면 1,800 ms 기준을 적용합니다.</dd>
+          </div>
+          <div>
+            <dt>업무 분류</dt>
+            <dd>중간 전사로 업무 유형과 안내에 쓸 작업을 판단합니다. 키가 없으면 키워드로 분류하고, 업무를 특정하지 못하면 전체 매뉴얼과 도구를 사용합니다.</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="detail tool-loop" aria-labelledby="tools-heading">
+        <h2 id="tools-heading">도구가 필요한 답변</h2>
+        <p class="subhead"><code>session.start</code>의 <code>tools_url</code>로 연결해, 듣는 동안 <code>GET /tools</code>로 목록을 가져옵니다.</p>
+        <ol class="tool-route" aria-label="최종 전사 확정 후 도구 호출과 결과 반영">
+          <li>GPT가 도구 요청</li>
+          <li class="arrow" aria-hidden="true">→</li>
+          <li>업무 Mock 서버 <code>:8100 · POST /tools/{name}</code></li>
+          <li class="arrow" aria-hidden="true">→</li>
+          <li>GPT가 결과를 답변에 반영</li>
+        </ol>
+        <p class="detail-note">서버가 인자를 검증하고 <code>X-Session-Id</code>를 붙여 호출합니다. 연습 도구는 주문 조회와 콜백 접수입니다.</p>
+      </section>
+    </div>
+
+    <aside class="dev" aria-label="응답 최적화와 로컬 평가">
+      <section>
+        <h2>첫 소리를 앞당기는 설정</h2>
+        <p><code>ANNOUNCE=static</code> 기본값은 조건이 맞으면 캐시된 안내를 먼저 보냅니다. 종료 전 LLM·TTS 준비(<code>LLM_EARLY_MS</code>)는 기본으로 꺼져 있습니다.</p>
+      </section>
+      <section>
+        <h2>로컬 평가</h2>
+        <p><code>run_eval.py</code>가 녹음 WAV를 재생하고, 고객 발화 종료 뒤와 마지막 도구 응답 뒤 각각 첫 소리까지 걸린 시간을 잽니다. Mock의 <code>GET /calls</code>로 호출 기록을 확인하고 <code>runs/</code>에 결과 JSONL과 응답 WAV를 저장합니다.</p>
+      </section>
+    </aside>
+
+    <footer aria-label="참조 코드">
+      <span>참조 코드</span>
+      <a href="../agent_server/server.py">server.py</a>
+      <a href="../agent_server/turn_judge.py">turn_judge.py</a>
+      <a href="../agent_server/case_router.py">case_router.py</a>
+      <a href="../mock_tools/mock_api_template.py">mock_api_template.py</a>
+      <a href="../eval/run_eval.py">run_eval.py</a>
+    </footer>
+  </main>
+</body>
+</html>

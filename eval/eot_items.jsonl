@@ -1,0 +1,29 @@
+{"id": "D1-pause", "text": "안녕하세요,", "expected": "hold", "note": "V2 DEMO1 말 중간 0.64초 쉼"}
+{"id": "D1-full", "text": "안녕하세요, 고객센터 상담 시간이 어떻게 되나요?", "expected": "end"}
+{"id": "D2-pause", "text": "주문번호가 데모 일 공 공 일인데요,", "expected": "hold", "note": "V2 DEMO2 말 중간 0.58초 쉼"}
+{"id": "D2-pause-digits", "text": "주문번호가 데모 1001인데요", "expected": "hold", "note": "받아쓰기가 숫자로 나올 때"}
+{"id": "D2-full", "text": "주문번호가 데모 일 공 공 일인데요, 택배가 지금 어디쯤 왔는지 알 수 있을까요?", "expected": "end"}
+{"id": "D3-full", "text": "내일 오전에 다시 전화 좀 부탁드려요.", "expected": "end"}
+{"id": "KO01-pause", "text": "제가 주문한 상품 언제 도착해요?", "expected": "hold", "note": "뒤에 주문번호가 이어짐 (쉼 0.42초). 질문이 완결돼 Jev 가 end 라고 해도 이상하지 않음"}
+{"id": "KO01-full", "text": "제가 주문한 상품 언제 도착해요? 주문번호는 일이삼사예요.", "expected": "end"}
+{"id": "KO02-full", "text": "어제 취소 요청했는데 아직 환불이 안 됐어요. 언제 되는 거예요?", "expected": "end"}
+{"id": "KO02-pause", "text": "어제 취소 요청했는데", "expected": "hold"}
+{"id": "KO03-pause", "text": "아까 그거 있잖아요.", "expected": "hold"}
+{"id": "KO03-full", "text": "아까 그거 있잖아요. 그거 취소된 거 맞아요?", "expected": "end"}
+{"id": "KO04-full", "text": "제품을 먹고 몸이 불편한데 어떻게 해야 하나요?", "expected": "end"}
+{"id": "KO05-pause", "text": "주문번호는 천이백삼십사입니다.", "expected": "hold", "note": "뒤에 요청이 이어짐"}
+{"id": "KO05-full", "text": "주문번호는 천이백삼십사입니다. 배송 상태 알려 주세요.", "expected": "end"}
+{"id": "KO06-pause", "text": "콜백 부탁드려요.", "expected": "hold", "note": "뒤에 번호가 이어짐 (쉼 0.54초). 완결된 요청이라 end 가 나와도 이상하지 않음"}
+{"id": "KO06-pause-num", "text": "콜백 부탁드려요. 제 번호는 공일공", "expected": "hold"}
+{"id": "KO06-full", "text": "콜백 부탁드려요. 제 번호는 공일공 공공공공 일이삼사예요.", "expected": "end"}
+{"id": "KO07-pause", "text": "주문번호는 1234...", "expected": "hold", "note": "정정이 이어짐 (쉼 0.56초)"}
+{"id": "KO07-pause2", "text": "주문번호는 1234... 아니, 1243이요.", "expected": "hold", "note": "뒤에 질문이 이어짐"}
+{"id": "KO07-full", "text": "주문번호는 1234... 아니, 1243이요. 배송 어디쯤인가요?", "expected": "end"}
+{"id": "KO08-full", "text": "제 주문이 어디쯤 왔는지 알려 주세요.", "expected": "end"}
+{"id": "KO09-full", "text": "교환하고 싶은데 어떻게 하면 되나요?", "expected": "end"}
+{"id": "KO10-full", "text": "이 제품은 하루에 몇 번 먹어야 하나요?", "expected": "end"}
+{"id": "KO11-pause", "text": "주문 취소하고 싶은데요", "expected": "hold", "note": "2.3초 쉬고 결제 수단이 이어짐"}
+{"id": "KO11-full", "text": "주문 취소하고 싶은데요 결제는 카드로 했어요.", "expected": "end"}
+{"id": "X-wait", "text": "잠시만요", "expected": "hold"}
+{"id": "X-hello", "text": "여보세요", "expected": "hold"}
+{"id": "X-yes", "text": "네", "expected": "end", "history": [{"role": "assistant", "content": "주문하신 상품 취소를 진행해 드릴까요?"}], "note": "상담원 질문에 대한 짧은 대답"}

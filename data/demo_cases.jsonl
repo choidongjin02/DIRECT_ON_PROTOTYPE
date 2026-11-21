@@ -1,3 +1,3 @@
-{"case_id": "DEMO1", "room_id": "DEMO1", "now": "2026-11-21 11:00", "history": [], "customer_utterance": "Hello, what time do you open?", "customer_profile": null, "_demo_only": true}
-{"case_id": "DEMO2", "room_id": "DEMO2", "now": "2026-11-21 11:00", "history": [], "customer_utterance": "My order number is demo one zero zero one. Where is my package?", "customer_profile": null, "_demo_only": true}
-{"case_id": "DEMO3", "room_id": "DEMO3", "now": "2026-11-21 11:00", "history": [], "customer_utterance": "Please call me back tomorrow.", "customer_profile": {"name": "Demo Customer", "phone": "01000001234", "email": null}, "_demo_only": true}
+{"case_id": "DEMO1", "room_id": "DEMO1", "now": "2026-11-21 11:00", "history": [], "customer_utterance": "안녕하세요, 고객센터 상담 시간이 어떻게 되나요?", "customer_profile": null, "_demo_only": true}
+{"case_id": "DEMO2", "room_id": "DEMO2", "now": "2026-11-21 11:00", "history": [], "customer_utterance": "주문번호가 데모 일 공 공 일인데요, 택배가 지금 어디쯤 왔는지 알 수 있을까요?", "customer_profile": null, "_demo_only": true}
+{"case_id": "DEMO3", "room_id": "DEMO3", "now": "2026-11-21 11:00", "history": [], "customer_utterance": "내일 오전에 다시 전화 좀 부탁드려요.", "customer_profile": {"name": "데모 고객", "phone": "01000001234", "email": null}, "_demo_only": true}

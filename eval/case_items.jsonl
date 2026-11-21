@@ -1,0 +1,21 @@
+{"id": "KO01", "text": "제가 주문한 상품 언제 도착해요? 주문번호는 일이삼사예요.", "expected": "delivery", "also_ok": [], "action": "order_lookup", "number": "1234"}
+{"id": "KO02", "text": "어제 취소 요청했는데 아직 환불이 안 됐어요. 언제 되는 거예요?", "expected": "refund", "also_ok": ["cancel"], "action": "none", "number": null}
+{"id": "KO03", "text": "아까 그거 있잖아요. 그거 취소된 거 맞아요?", "expected": "unclear", "also_ok": ["cancel"], "action": "none", "number": null}
+{"id": "KO04", "text": "제품을 먹고 몸이 불편한데 어떻게 해야 하나요?", "expected": "handoff", "also_ok": [], "action": "none", "number": null}
+{"id": "KO05", "text": "주문번호는 천이백삼십사입니다. 배송 상태 알려 주세요.", "expected": "delivery", "also_ok": [], "action": "order_lookup", "number": "1234"}
+{"id": "KO06", "text": "콜백 부탁드려요. 제 번호는 공일공 공공공공 일이삼사예요.", "expected": "handoff", "also_ok": [], "action": "callback", "number": "01000001234"}
+{"id": "KO07", "text": "주문번호는 1234... 아니, 1243이요. 배송 어디쯤인가요?", "expected": "delivery", "also_ok": [], "action": "order_lookup", "number": "1243"}
+{"id": "KO08", "text": "제 주문이 어디쯤 왔는지 알려 주세요.", "expected": "delivery", "also_ok": [], "action": "none", "number": null}
+{"id": "KO09", "text": "교환하고 싶은데 어떻게 하면 되나요?", "expected": "exchange", "also_ok": [], "action": "none", "number": null}
+{"id": "KO10", "text": "이 제품은 하루에 몇 번 먹어야 하나요?", "expected": "product", "also_ok": [], "action": "none", "number": null}
+{"id": "KO11", "text": "주문 취소하고 싶은데요 결제는 카드로 했어요.", "expected": "cancel", "also_ok": [], "action": "none", "number": null}
+{"id": "E01", "text": "카드 결제가 두 번 된 것 같아요.", "expected": "payment", "also_ok": [], "action": "none", "number": null}
+{"id": "E02", "text": "이 제품 가격이 얼마예요?", "expected": "product", "also_ok": [], "action": "none", "number": null}
+{"id": "E03", "text": "상담 시간이 어떻게 되나요?", "expected": "other", "also_ok": [], "action": "none", "number": null}
+{"id": "E04", "text": "상담원이랑 직접 통화하고 싶어요.", "expected": "handoff", "also_ok": [], "action": "none", "number": null}
+{"id": "E05", "text": "먹고 나서 두드러기가 났는데 환불되나요?", "expected": "handoff", "also_ok": [], "action": "none", "number": null}
+{"id": "E06", "text": "반품하려면 어떻게 해야 돼요?", "expected": "refund", "also_ok": [], "action": "none", "number": null}
+{"id": "E07", "text": "다른 맛으로 바꿀 수 있나요?", "expected": "exchange", "also_ok": [], "action": "none", "number": null}
+{"id": "E08", "text": "저번에 주문한 거 아직 안 왔어요.", "expected": "delivery", "also_ok": [], "action": "none", "number": null}
+{"id": "E09", "text": "주문한 거 취소됐는지 확인하고 싶어요. 주문번호는 이삼사오예요.", "expected": "cancel", "also_ok": [], "action": "cancel_check", "number": "2345"}
+{"id": "E10", "text": "무통장 입금했는데 확인이 안 돼요.", "expected": "payment", "also_ok": [], "action": "none", "number": null}

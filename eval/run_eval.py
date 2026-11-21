@@ -53,35 +53,43 @@ async def run_case(case, meta, args):
             async def sender():
                 silence = b"\0" * (FRAME * 2)
                 k = 0
-                while not done.is_set():
-                    i = k * FRAME * 2
-                    chunk = pcm[i:i + FRAME * 2] if i < len(pcm) else silence   # 말이 끝나도 전화선처럼 무음을 계속 보낸다
-                    if len(chunk) < FRAME * 2:
-                        chunk += b"\0" * (FRAME * 2 - len(chunk))
-                    await ws.send(chunk)
-                    k += 1
-                    wait = t0 + k * 0.02 - time.perf_counter()
-                    if wait > 0:
-                        await asyncio.sleep(wait)
-                    if time.perf_counter() > speech_end + TAIL_TIMEOUT:
-                        done.set()
+                try:
+                    while not done.is_set():
+                        i = k * FRAME * 2
+                        chunk = pcm[i:i + FRAME * 2] if i < len(pcm) else silence   # 말이 끝나도 전화선처럼 무음을 계속 보낸다
+                        if len(chunk) < FRAME * 2:
+                            chunk += b"\0" * (FRAME * 2 - len(chunk))
+                        await ws.send(chunk)
+                        k += 1
+                        wait = t0 + k * 0.02 - time.perf_counter()
+                        if wait > 0:
+                            await asyncio.sleep(wait)
+                        if time.perf_counter() > speech_end + TAIL_TIMEOUT:
+                            done.set()
+                finally:
+                    done.set()                   # 연결이 끊겨 보내기가 실패해도 기다림을 끝낸다
 
             async def receiver():
-                async for m in ws:
-                    now = time.perf_counter()
-                    if isinstance(m, bytes):
-                        agent_frames.append((now, m))
-                    else:
-                        e = json.loads(m)
-                        events.append({"t": now - speech_end, **e})
-                        if e.get("type") == "turn.end":
-                            done.set()
-                            return
+                try:
+                    async for m in ws:
+                        now = time.perf_counter()
+                        if isinstance(m, bytes):
+                            agent_frames.append((now, m))
+                        else:
+                            e = json.loads(m)
+                            events.append({"t": now - speech_end, **e})
+                            if e.get("type") == "turn.end":
+                                return
+                finally:
+                    done.set()                   # turn.end 없이 서버가 연결을 끊어도(정상 종료·RST 모두) 기다림을 끝낸다
 
             st = asyncio.create_task(sender())
             rt = asyncio.create_task(receiver())
             await done.wait()
             st.cancel(); rt.cancel()
+            await asyncio.gather(st, rt, return_exceptions=True)   # 끝난 작업의 예외를 거둬서 경고가 안 뜨게 한다
+            if not any(e.get("type") == "turn.end" for e in events):
+                out["no_turn_end"] = True        # 서버가 turn.end 없이 끊었거나 25초 안에 안 보냄
     except Exception as e:
         out["error"] = repr(e)[:300]
         return out
@@ -123,11 +131,11 @@ async def main():
     ap.add_argument("--concurrency", type=int, default=4)
     args = ap.parse_args()
     os.makedirs(args.out, exist_ok=True)
-    cases = [json.loads(l) for l in open(args.cases)]
-    meta = json.load(open(os.path.join(args.audio, "meta.json")))
+    cases = [json.loads(l) for l in open(args.cases, encoding="utf-8")]
+    meta = json.load(open(os.path.join(args.audio, "meta.json"), encoding="utf-8"))
     cases = [c for c in cases if c["case_id"] in meta]
     path = os.path.join(args.out, "results.jsonl")
-    done = {json.loads(l)["case_id"] for l in open(path)} if os.path.exists(path) else set()
+    done = {json.loads(l)["case_id"] for l in open(path, encoding="utf-8")} if os.path.exists(path) else set()
     todo = [c for c in cases if c["case_id"] not in done][: args.limit or None]
     sem = asyncio.Semaphore(args.concurrency)
 
@@ -135,7 +143,7 @@ async def main():
         async with sem:
             return await run_case(c, meta[c["case_id"]], args)
 
-    with open(path, "a") as f:
+    with open(path, "a", encoding="utf-8") as f:
         for fut in asyncio.as_completed([one(c) for c in todo]):
             r = await fut
             f.write(json.dumps(r, ensure_ascii=False) + "\n"); f.flush()

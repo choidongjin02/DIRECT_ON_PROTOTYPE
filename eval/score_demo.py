@@ -9,7 +9,7 @@ def pts(t):
     return next((v for bound,v in TABLE if t<=bound),0)
 def main():
     p=argparse.ArgumentParser();p.add_argument('--run',required=True);a=p.parse_args()
-    f=Path(a.run)/'results.jsonl'; rows=[json.loads(x) for x in f.read_text().splitlines() if x.strip()]
+    f=Path(a.run)/'results.jsonl'; rows=[json.loads(x) for x in f.read_text(encoding="utf-8").splitlines() if x.strip()]
     for r in rows:
         bad=r.get('spoke_before_end') or 'error' in r or r.get('turn_end') is None or r.get('turn_end',999)>25
         sp=0 if bad else pts(r.get('first_sound'))
